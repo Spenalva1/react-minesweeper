@@ -46,7 +46,7 @@ const getColorFromStatus = (status: Status) => {
   return '#686868';
 };
 
-const getColorFromNumber = (number: string) => 'blue';
+const getColorFromNumber = (number: string) => (number ? 'blue' : 'red');
 
 const TileStyles = styled.div<{ tile: TileProps }>`
   height: 100%;
