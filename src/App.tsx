@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { ContainerStyles } from './globalStyles';
 import Board from './components/Board';
-import { Config, levelsConfig } from './lib/Minesweeper';
+import { levelsConfig } from './lib/Minesweeper';
 import useLocal from './lib/LocalStorage';
 
 function App() {
