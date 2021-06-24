@@ -1,6 +1,13 @@
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-plusplus */
-export type Status = 'HIDDEN' | 'MINE' | 'NUMBER' | 'MARKED';
+
+export type Board = Row[];
+
+export type BoardStatus = 'PLAYING' | 'WON' | 'LOST';
+
+export type TileStatus = 'HIDDEN' | 'MINE' | 'NUMBER' | 'MARKED';
+
+type Row = Tile[];
 
 export interface Config {
   rows: number;
@@ -15,12 +22,10 @@ export interface Coords {
 
 export interface Tile {
   number: number;
-  status: Status;
+  status: TileStatus;
   isMine: boolean;
   coords: Coords;
 }
-
-export type Row = Tile[];
 
 export const levelsConfig = {
   beginner: {
@@ -40,9 +45,11 @@ export const levelsConfig = {
   },
 };
 
-export const createBoard = (config: Config) => {
+export const createBoard = (
+  config: Config
+): { board: Board; status: BoardStatus } => {
   const minesPosition = getMinesPosition(config);
-  const newBoard: Row[] = [];
+  const newBoard: Board = [];
   let row: Row;
   for (let i = 0; i < config.rows; i++) {
     row = [];
@@ -60,34 +67,57 @@ export const createBoard = (config: Config) => {
     newBoard[position.x][position.y].isMine = true;
   });
   const enumeratedBoard = enumerateBoard(newBoard);
-  return enumeratedBoard;
+  return { board: enumeratedBoard, status: 'PLAYING' };
 };
 
-export const clickTile = (board: Row[], coords: Coords) => {
+export const clickTile = (
+  board: Board,
+  coords: Coords
+): { board: Board; status: BoardStatus } => {
   const { x, y } = coords;
+
   if (board[x][y].status === 'NUMBER') {
     return clickNumber(board, coords);
   }
-  if (board[x][y].status !== 'HIDDEN') return board;
+
+  if (board[x][y].status !== 'HIDDEN') return { board, status: 'PLAYING' };
+
   const newBoard = [...[...board]];
-  newBoard[x][y].status = newBoard[x][y].isMine ? 'MINE' : 'NUMBER';
-  if (newBoard[x][y].number === 0 && newBoard[x][y].status === 'NUMBER') {
+
+  if (newBoard[x][y].isMine) {
+    newBoard[x][y].status = 'MINE';
+    return { board: getLostBoard(newBoard), status: 'LOST' };
+  }
+
+  newBoard[x][y].status = 'NUMBER';
+
+  if (newBoard[x][y].number === 0) {
     clickAdyacents(newBoard, coords);
   }
-  return newBoard;
+
+  return { board: newBoard, status: isBoardWon(newBoard) ? 'WON' : 'PLAYING' };
 };
 
-export const markTile = (board: Row[], coords: Coords) => {
+export const markTile = (
+  board: Board,
+  coords: Coords
+): { board: Board; event: 'MARKED' | 'UNMARKED' | 'NONE' } => {
   const { x, y } = coords;
   if (board[x][y].status === 'NUMBER' || board[x][y].status === 'MINE')
-    return board;
+    return { board, event: 'NONE' };
   const newBoard = [...[...board]];
   newBoard[x][y].status =
     newBoard[x][y].status === 'MARKED' ? 'HIDDEN' : 'MARKED';
-  return newBoard;
+  return {
+    board: newBoard,
+    event: newBoard[x][y].status === 'MARKED' ? 'MARKED' : 'UNMARKED',
+  };
 };
 
-const clickNumber = (board: Row[], coords: Coords) => {
+const clickNumber = (
+  board: Board,
+  coords: Coords
+): { board: Board; status: BoardStatus } => {
   let tilesMarked = 0;
   for (let i = -1; i <= 1; i++) {
     for (let j = -1; j <= 1; j++) {
@@ -105,13 +135,26 @@ const clickNumber = (board: Row[], coords: Coords) => {
   }
   if (tilesMarked === board[coords.x][coords.y].number) {
     const newBoard = [...[...board]];
-    clickAdyacents(newBoard, coords);
-    return newBoard;
+    const status = clickAdyacents(newBoard, coords);
+    console.log('status despues de clickAdyacents', status);
+
+    if (status === 'LOST') {
+      return {
+        board: getLostBoard(newBoard),
+        status: 'LOST',
+      };
+    }
+
+    return {
+      board: newBoard,
+      status: isBoardWon(newBoard) ? 'WON' : 'PLAYING',
+    };
   }
-  return board;
+  return { board, status: isBoardWon(board) ? 'WON' : 'PLAYING' };
 };
 
-const clickAdyacents = (board: Row[], coords: Coords) => {
+const clickAdyacents = (board: Board, coords: Coords): BoardStatus => {
+  let status: BoardStatus = 'PLAYING';
   for (let i = -1; i <= 1; i++) {
     for (let j = -1; j <= 1; j++) {
       const x = coords.x + i;
@@ -123,19 +166,21 @@ const clickAdyacents = (board: Row[], coords: Coords) => {
         if (board[x][y].status === 'HIDDEN') {
           if (board[x][y].isMine) {
             board[x][y].status = 'MINE';
+            status = 'LOST';
           } else {
             board[x][y].status = 'NUMBER';
             if (board[x][y].number === 0) {
-              clickAdyacents(board, { x, y });
+              status = clickAdyacents(board, { x, y });
             }
           }
         }
       }
     }
   }
+  return status;
 };
 
-const enumerateTile = (board: Row[], coords: Coords) => {
+const enumerateTile = (board: Board, coords: Coords) => {
   let number = 0;
   for (let i = -1; i <= 1; i++) {
     for (let j = -1; j <= 1; j++) {
@@ -149,7 +194,7 @@ const enumerateTile = (board: Row[], coords: Coords) => {
   return number;
 };
 
-const enumerateBoard = (board: Row[]) => {
+const enumerateBoard = (board: Board) => {
   const newBoard = [...[...board]];
   const enumeratedBoard = newBoard.map((row) => {
     const enumeratedRow = row.map((tile) => {
@@ -163,6 +208,10 @@ const enumerateBoard = (board: Row[]) => {
   });
   return enumeratedBoard;
 };
+
+const isBoardWon = (board: Board): boolean => !board.length;
+
+const getLostBoard = (board: Board): Board => board;
 
 const getMinesPosition = ({ rows, cols, mines }: Config) => {
   const minesPosition: Coords[] = [];
