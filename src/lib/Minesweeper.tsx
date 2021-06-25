@@ -5,7 +5,13 @@ export type Board = Row[];
 
 export type BoardStatus = 'PLAYING' | 'WON' | 'LOST';
 
-export type TileStatus = 'HIDDEN' | 'MINE' | 'NUMBER' | 'MARKED';
+export type TileStatus =
+  | 'HIDDEN'
+  | 'MINE'
+  | 'NUMBER'
+  | 'MARKED'
+  | 'WRONG'
+  | 'LOOSER';
 
 type Row = Tile[];
 
@@ -85,7 +91,7 @@ export const clickTile = (
   const newBoard = [...[...board]];
 
   if (newBoard[x][y].isMine) {
-    newBoard[x][y].status = 'MINE';
+    newBoard[x][y].status = 'LOOSER';
     return { board: getLostBoard(newBoard), status: 'LOST' };
   }
 
@@ -114,6 +120,34 @@ export const markTile = (
   };
 };
 
+export const getWonBoard = (board: Board): Board =>
+  board.map((row) =>
+    row.map((tile) => ({
+      ...tile,
+      status: tile.isMine ? 'MARKED' : tile.status,
+    }))
+  );
+
+export const getLostBoard = (board: Board): Board =>
+  board.map((row) =>
+    row.map((tile) => ({
+      ...tile,
+      status: getLostTileStatus(tile),
+    }))
+  );
+
+const getLostTileStatus = (tile: Tile): TileStatus => {
+  if (tile.isMine) {
+    return tile.status !== 'LOOSER' && tile.status !== 'MARKED'
+      ? 'MINE'
+      : tile.status;
+  }
+  if (tile.status === 'MARKED') {
+    return 'WRONG';
+  }
+  return tile.status;
+};
+
 const clickNumber = (
   board: Board,
   coords: Coords
@@ -136,7 +170,6 @@ const clickNumber = (
   if (tilesMarked === board[coords.x][coords.y].number) {
     const newBoard = [...[...board]];
     const status = clickAdyacents(newBoard, coords);
-    console.log('status despues de clickAdyacents', status);
 
     if (status === 'LOST') {
       return {
@@ -165,7 +198,7 @@ const clickAdyacents = (board: Board, coords: Coords): BoardStatus => {
       ) {
         if (board[x][y].status === 'HIDDEN') {
           if (board[x][y].isMine) {
-            board[x][y].status = 'MINE';
+            board[x][y].status = 'LOOSER';
             status = 'LOST';
           } else {
             board[x][y].status = 'NUMBER';
@@ -209,9 +242,10 @@ const enumerateBoard = (board: Board) => {
   return enumeratedBoard;
 };
 
-const isBoardWon = (board: Board): boolean => !board.length;
-
-const getLostBoard = (board: Board): Board => board;
+const isBoardWon = (board: Board): boolean =>
+  board.every((row) =>
+    row.every((tile) => tile.status === 'NUMBER' || tile.isMine)
+  );
 
 const getMinesPosition = ({ rows, cols, mines }: Config) => {
   const minesPosition: Coords[] = [];

@@ -11,6 +11,8 @@ import {
   Config,
   Board as BoardType,
   BoardStatus,
+  getWonBoard,
+  getLostBoard,
 } from '../lib/Minesweeper';
 
 interface BoardProps {
@@ -31,6 +33,15 @@ const Board: FunctionComponent<BoardProps> = ({ config }) => {
   useEffect(() => {
     setGame({ ...createBoard(config), minesLeft: config.mines });
   }, [config]);
+
+  useEffect(() => {
+    if (game.status === 'WON') {
+      setGame({
+        ...game,
+        board: getWonBoard(game.board),
+      });
+    }
+  }, [game.status]);
 
   const onTileClick = (coords: Coords) => {
     if (game.status !== 'PLAYING') return;
@@ -83,9 +94,9 @@ const Board: FunctionComponent<BoardProps> = ({ config }) => {
 const BoardStyles = styled.div`
   display: grid;
   grid-template-columns: ${(props: { config: Config }) =>
-    `repeat(${props.config.cols}, 24px)`};
+    `repeat(${props.config.cols}, 30px)`};
   grid-template-rows: ${(props: { config: Config }) =>
-    `repeat(${props.config.rows}, 24px)`};
+    `repeat(${props.config.rows}, 30px)`};
 `;
 
 export default Board;

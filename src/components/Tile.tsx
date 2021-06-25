@@ -1,6 +1,10 @@
 import React, { FunctionComponent } from 'react';
 import styled from 'styled-components';
 import { TileStatus, Tile, BoardStatus } from '../lib/Minesweeper';
+import flagImg from '../assets/flag.svg';
+import tileImg from '../assets/tile.png';
+import bombImg from '../assets/bomb.png';
+import wrongImg from '../assets/wrong.svg';
 
 interface TileProps {
   tile: Tile;
@@ -36,6 +40,15 @@ const TileComponent: FunctionComponent<TileProps> = ({
       {tile.status === 'NUMBER' && tile.number !== 0 && (
         <span>{tile.number}</span>
       )}
+      {tile.status === 'MARKED' && <img src={flagImg} alt="flag" />}
+      {tile.status === 'HIDDEN' && <img src={tileImg} alt="flag" />}
+      {tile.status === 'WRONG' && <img src={wrongImg} alt="flag" />}
+      {tile.status === 'LOOSER' && (
+        <img className="bomb" src={bombImg} alt="flag" />
+      )}
+      {tile.status === 'MINE' && (
+        <img className="bomb" src={bombImg} alt="flag" />
+      )}
     </TileStyles>
   );
 };
@@ -43,10 +56,8 @@ const TileComponent: FunctionComponent<TileProps> = ({
 export default TileComponent;
 
 const getColorFromStatus = (status: TileStatus) => {
-  if (status === 'NUMBER') return '#bbbbbb';
-  if (status === 'MARKED') return 'orange';
-  if (status === 'MINE') return 'red';
-  return '#686868';
+  if (status === 'LOOSER') return 'red';
+  return '#C6C6C6';
 };
 
 const getColorFromNumber = (n: number) => {
@@ -76,6 +87,14 @@ const TileStyles = styled.div<{ tile: TileProps }>`
       : 'unset'};
   color: ${(props: any) => getColorFromNumber(props.tile.tile.number)};
   font-weight: bold;
-  font-size: 1.2em;
+  font-size: 1.8em;
   border: 1px solid black;
+
+  img {
+    width: 100%;
+
+    &.bomb {
+      width: 80%;
+    }
+  }
 `;
