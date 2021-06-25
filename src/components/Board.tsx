@@ -12,7 +12,6 @@ import {
   Board as BoardType,
   BoardStatus,
   getWonBoard,
-  getLostBoard,
 } from '../lib/Minesweeper';
 
 interface BoardProps {
